@@ -1,0 +1,42 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model MeetingMinute {
+  id                   Int             @id @default(autoincrement())
+  division             String
+  title                String
+  notes                String
+  speaker              String?
+  numberOfParticipants Int             @default(0)
+  members              Json
+  imageUrl             String?
+  results              MeetingResult[] // relation
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+}
+
+model MeetingResult {
+  id                   Int           @id @default(autoincrement())
+  minuteId             Int
+  minute               MeetingMinute @relation(fields: [minuteId], references: [id])
+  target               String
+  achievement          Int           @default(0)
+  targetCompletionDate DateTime?
+  description          String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@index([minuteId])
+}
