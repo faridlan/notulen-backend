@@ -70,15 +70,31 @@ export class MeetingMinutesService {
   }
 
   async update(id: number, dto: UpdateMeetingMinuteDto) {
-    this.logger.log(`Updating minute #${id}`);
+    // Get old data
+    const existing = await this.prisma.meetingMinute.findUnique({
+      where: { id },
+    });
 
-    const m = await this.prisma.meetingMinute.update({
+    if (!existing) throw new NotFoundException('MeetingMinute not found');
+
+    // Check if imageUrl is changed
+    if (
+      dto.imageUrl &&
+      existing.imageUrl &&
+      dto.imageUrl !== existing.imageUrl
+    ) {
+      // Delete old image
+      await FileUtils.deleteLocalFile(existing.imageUrl);
+    }
+
+    // Proceed with update
+    const updated = await this.prisma.meetingMinute.update({
       where: { id },
       data: dto,
       include: { results: true },
     });
 
-    return MeetingMinuteMapper.toDto(m);
+    return MeetingMinuteMapper.toDto(updated);
   }
 
   async remove(id: number) {
