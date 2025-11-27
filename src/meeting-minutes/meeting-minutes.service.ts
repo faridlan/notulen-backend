@@ -5,6 +5,7 @@ import { CreateMeetingMinuteDto } from './dto/create-meeting-minute.dto';
 import { UpdateMeetingMinuteDto } from './dto/update-meeting-minute.dto';
 import { MeetingMinuteMapper } from 'src/common/mappers/meeting-minute.mapper';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
+import { FileUtils } from '../common/utils/file.utils';
 
 @Injectable()
 export class MeetingMinutesService {
@@ -59,7 +60,7 @@ export class MeetingMinutesService {
 
   async findOne(id: number) {
     const minute = await this.prisma.meetingMinute.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       include: { results: true },
     });
 
@@ -83,8 +84,14 @@ export class MeetingMinutesService {
   async remove(id: number) {
     this.logger.warn(`Soft deleting minute #${id}`);
 
-    await this.findOne(id);
+    const minute = await this.findOne(id); // ensures exists
 
+    // Delete its image if any
+    if (minute.imageUrl) {
+      await FileUtils.deleteLocalFile(minute.imageUrl);
+    }
+
+    // Soft delete DB record
     return this.prisma.meetingMinute.update({
       where: { id },
       data: { isDeleted: true },
