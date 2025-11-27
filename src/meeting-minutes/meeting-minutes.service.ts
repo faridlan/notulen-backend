@@ -1,27 +1,30 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMeetingMinuteDto } from './dto/create-meeting-minute.dto';
 import { UpdateMeetingMinuteDto } from './dto/update-meeting-minute.dto';
+import { MeetingMinuteMapper } from 'src/common/mappers/meeting-minute.mapper';
 
 @Injectable()
 export class MeetingMinutesService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateMeetingMinuteDto) {
-    return this.prisma.meetingMinute.create({
-      data: {
-        ...dto,
-        // ensure members stored as JSON
-        members: dto.members,
-      },
+    const m = await this.prisma.meetingMinute.create({
+      data: dto,
+      include: { results: true },
     });
+
+    return MeetingMinuteMapper.toDto(m);
   }
 
   async findAll() {
-    return this.prisma.meetingMinute.findMany({
+    const minutes = await this.prisma.meetingMinute.findMany({
       include: { results: true },
       orderBy: { createdAt: 'desc' },
     });
+
+    return minutes.map(MeetingMinuteMapper.toDto);
   }
 
   async findOne(id: number) {
@@ -29,19 +32,20 @@ export class MeetingMinutesService {
       where: { id },
       include: { results: true },
     });
+
     if (!minute) throw new NotFoundException('MeetingMinute not found');
-    return minute;
+
+    return MeetingMinuteMapper.toDto(minute);
   }
 
   async update(id: number, dto: UpdateMeetingMinuteDto) {
-    await this.findOne(id); // will throw if missing
-    return this.prisma.meetingMinute.update({
+    const m = await this.prisma.meetingMinute.update({
       where: { id },
-      data: {
-        ...dto,
-      },
+      data: dto,
       include: { results: true },
     });
+
+    return MeetingMinuteMapper.toDto(m);
   }
 
   async remove(id: number) {

@@ -1,33 +1,38 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMeetingResultDto } from './dto/create-meeting-result.dto';
 import { UpdateMeetingResultDto } from './dto/update-meeting-result.dto';
+import { MeetingResultMapper } from 'src/common/mappers/meeting-result.mapper';
 
 @Injectable()
 export class MeetingResultsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateMeetingResultDto) {
-    // Convert date string to Date if provided
-    const data: any = {
-      minuteId: dto.minuteId,
-      target: dto.target,
-      achievement: dto.achievement ?? 0,
-      description: dto.description,
-    };
-    if (dto.targetCompletionDate)
-      data.targetCompletionDate = new Date(dto.targetCompletionDate);
+    const r = await this.prisma.meetingResult.create({
+      data: {
+        minuteId: dto.minuteId,
+        target: dto.target,
+        achievement: dto.achievement,
+        targetCompletionDate: dto.targetCompletionDate
+          ? new Date(dto.targetCompletionDate)
+          : null,
+        description: dto.description,
+      },
+      include: { minute: true },
+    });
 
-    return this.prisma.meetingResult.create({ data });
+    return MeetingResultMapper.toDto(r);
   }
 
   async findAll() {
-    return this.prisma.meetingResult.findMany({
+    const results = await this.prisma.meetingResult.findMany({
       include: { minute: true },
       orderBy: { createdAt: 'desc' },
     });
+
+    return results.map(MeetingResultMapper.toDto);
   }
 
   async findOne(id: number) {
@@ -35,19 +40,25 @@ export class MeetingResultsService {
       where: { id },
       include: { minute: true },
     });
+
     if (!r) throw new NotFoundException('MeetingResult not found');
-    return r;
+
+    return MeetingResultMapper.toDto(r);
   }
 
   async update(id: number, dto: UpdateMeetingResultDto) {
-    await this.findOne(id);
-    const data: any = { ...dto };
-    if (dto.targetCompletionDate)
-      data.targetCompletionDate = new Date(dto.targetCompletionDate);
-    return this.prisma.meetingResult.update({
+    const r = await this.prisma.meetingResult.update({
       where: { id },
-      data,
+      data: {
+        ...dto,
+        targetCompletionDate: dto.targetCompletionDate
+          ? new Date(dto.targetCompletionDate)
+          : undefined,
+      },
+      include: { minute: true },
     });
+
+    return MeetingResultMapper.toDto(r);
   }
 
   async remove(id: number) {
