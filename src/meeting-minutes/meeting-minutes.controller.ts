@@ -9,10 +9,12 @@ import {
   ParseIntPipe,
   UsePipes,
   ValidationPipe,
+  Query,
 } from '@nestjs/common';
 import { MeetingMinutesService } from './meeting-minutes.service';
 import { CreateMeetingMinuteDto } from './dto/create-meeting-minute.dto';
 import { UpdateMeetingMinuteDto } from './dto/update-meeting-minute.dto';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 
 @Controller('minutes')
 export class MeetingMinutesController {
@@ -25,8 +27,8 @@ export class MeetingMinutesController {
   }
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(@Query() query: PaginationQueryDto) {
+    return this.service.findAll(query);
   }
 
   @Get(':id')

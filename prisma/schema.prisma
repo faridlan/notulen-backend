@@ -25,6 +25,7 @@ model MeetingMinute {
   results              MeetingResult[] // relation
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
+  isDeleted            Boolean         @default(false)
 }
 
 model MeetingResult {
@@ -37,6 +38,7 @@ model MeetingResult {
   description          String?
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
+  isDeleted            Boolean       @default(false)
 
   @@index([minuteId])
 }

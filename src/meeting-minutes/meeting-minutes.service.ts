@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateMeetingMinuteDto } from './dto/create-meeting-minute.dto';
 import { UpdateMeetingMinuteDto } from './dto/update-meeting-minute.dto';
 import { MeetingMinuteMapper } from 'src/common/mappers/meeting-minute.mapper';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 
 @Injectable()
 export class MeetingMinutesService {
@@ -18,13 +19,39 @@ export class MeetingMinutesService {
     return MeetingMinuteMapper.toDto(m);
   }
 
-  async findAll() {
-    const minutes = await this.prisma.meetingMinute.findMany({
-      include: { results: true },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(query: PaginationQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sort = 'createdAt',
+      order = 'desc',
+    } = query;
 
-    return minutes.map(MeetingMinuteMapper.toDto);
+    const skip = (page - 1) * limit;
+
+    return (
+      await this.prisma.meetingMinute.findMany({
+        where: {
+          isDeleted: false,
+
+          // SEARCH fields
+          OR: search
+            ? [
+                { title: { contains: search } },
+                { notes: { contains: search } },
+                { division: { contains: search } },
+                { speaker: { contains: search } },
+              ]
+            : undefined,
+        },
+
+        include: { results: true },
+        skip,
+        take: limit,
+        orderBy: { [sort]: order },
+      })
+    ).map(MeetingMinuteMapper.toDto);
   }
 
   async findOne(id: number) {
@@ -50,7 +77,10 @@ export class MeetingMinutesService {
 
   async remove(id: number) {
     await this.findOne(id);
-    // depending on cascade rules you might want to delete results too; Prisma will handle via foreign key constraints
-    return this.prisma.meetingMinute.delete({ where: { id } });
+
+    return this.prisma.meetingMinute.update({
+      where: { id },
+      data: { isDeleted: true },
+    });
   }
 }

@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateMeetingResultDto } from './dto/create-meeting-result.dto';
 import { UpdateMeetingResultDto } from './dto/update-meeting-result.dto';
 import { MeetingResultMapper } from 'src/common/mappers/meeting-result.mapper';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 
 @Injectable()
 export class MeetingResultsService {
@@ -26,13 +27,35 @@ export class MeetingResultsService {
     return MeetingResultMapper.toDto(r);
   }
 
-  async findAll() {
-    const results = await this.prisma.meetingResult.findMany({
-      include: { minute: true },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(query: PaginationQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sort = 'createdAt',
+      order = 'desc',
+    } = query;
 
-    return results.map(MeetingResultMapper.toDto);
+    const skip = (page - 1) * limit;
+
+    return (
+      await this.prisma.meetingResult.findMany({
+        where: {
+          isDeleted: false,
+
+          OR: search
+            ? [
+                { target: { contains: search } },
+                { description: { contains: search } },
+              ]
+            : undefined,
+        },
+        include: { minute: true },
+        skip,
+        take: limit,
+        orderBy: { [sort]: order },
+      })
+    ).map(MeetingResultMapper.toDto);
   }
 
   async findOne(id: number) {
@@ -63,6 +86,10 @@ export class MeetingResultsService {
 
   async remove(id: number) {
     await this.findOne(id);
-    return this.prisma.meetingResult.delete({ where: { id } });
+
+    return this.prisma.meetingResult.update({
+      where: { id },
+      data: { isDeleted: true },
+    });
   }
 }
