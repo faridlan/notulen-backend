@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/unbound-method */
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMeetingMinuteDto } from './dto/create-meeting-minute.dto';
 import { UpdateMeetingMinuteDto } from './dto/update-meeting-minute.dto';
@@ -9,8 +9,11 @@ import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 @Injectable()
 export class MeetingMinutesService {
   constructor(private prisma: PrismaService) {}
+  private logger = new Logger(MeetingMinutesService.name);
 
   async create(dto: CreateMeetingMinuteDto) {
+    this.logger.log(`Creating minute "${dto.title}"`);
+
     const m = await this.prisma.meetingMinute.create({
       data: dto,
       include: { results: true },
@@ -66,6 +69,8 @@ export class MeetingMinutesService {
   }
 
   async update(id: number, dto: UpdateMeetingMinuteDto) {
+    this.logger.log(`Updating minute #${id}`);
+
     const m = await this.prisma.meetingMinute.update({
       where: { id },
       data: dto,
@@ -76,6 +81,8 @@ export class MeetingMinutesService {
   }
 
   async remove(id: number) {
+    this.logger.warn(`Soft deleting minute #${id}`);
+
     await this.findOne(id);
 
     return this.prisma.meetingMinute.update({
