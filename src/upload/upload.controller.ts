@@ -3,25 +3,20 @@
 import {
   Controller,
   Post,
-  UploadedFile,
+  UploadedFiles,
   UseInterceptors,
-  BadRequestException,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { multerConfig } from '../common/upload/multer.config';
 
 @Controller('upload')
 export class UploadController {
-  @Post('image')
-  @UseInterceptors(FileInterceptor('file', multerConfig))
-  uploadImage(@UploadedFile() file: Express.Multer.File) {
-    if (!file) {
-      throw new BadRequestException('File is required');
-    }
-
-    return {
+  @Post('images')
+  @UseInterceptors(FilesInterceptor('files', 10, multerConfig))
+  uploadMultipleImages(@UploadedFiles() files: Express.Multer.File[]) {
+    return files.map((file) => ({
       url: `/uploads/meeting-images/${file.filename}`,
       filename: file.filename,
-    };
+    }));
   }
 }

@@ -1,0 +1,253 @@
+{
+  "info": {
+    "_postman_id": "f2a573c7-2f39-4a7a-8f44-21096cdbe123",
+    "name": "Notulen Backend API",
+    "description": "Complete REST API for Meeting Minutes, Meeting Results, and Image Management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Upload",
+      "item": [
+        {
+          "name": "Upload Multiple Images",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:3000/upload/images",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["upload", "images"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Meeting Minutes",
+      "item": [
+        {
+          "name": "Create Meeting Minute",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"division\": \"Finance\",\n  \"title\": \"Budget Meeting\",\n  \"notes\": \"Discuss Q4 plan\",\n  \"speaker\": \"Alice\",\n  \"numberOfParticipants\": 5,\n  \"members\": [{\"name\": \"Alice\"}, {\"name\": \"Bob\"}]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/minutes",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["minutes"]
+            }
+          }
+        },
+        {
+          "name": "Add Images to MeetingMinute",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"urls\": [\n    \"/uploads/meeting-images/a.png\",\n    \"/uploads/meeting-images/b.png\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/minutes/1/images",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["minutes", "1", "images"]
+            }
+          }
+        },
+        {
+          "name": "Get All Meeting Minutes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/minutes",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["minutes"]
+            }
+          }
+        },
+        {
+          "name": "Get MeetingMinute by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/minutes/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["minutes", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update MeetingMinute",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Budget Meeting\",\n  \"notes\": \"Updated notes\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/minutes/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["minutes", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Specific Image",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "http://localhost:3000/minutes/1/images/10",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["minutes", "1", "images", "10"]
+            }
+          }
+        },
+        {
+          "name": "Replace Image",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"/uploads/meeting-images/new.png\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/minutes/1/images/10",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["minutes", "1", "images", "10"]
+            }
+          }
+        },
+        {
+          "name": "Soft Delete MeetingMinute",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "http://localhost:3000/minutes/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["minutes", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Meeting Results",
+      "item": [
+        {
+          "name": "Create Meeting Result",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"minuteId\": 1,\n  \"target\": \"Prepare report\",\n  \"achievement\": 0,\n  \"description\": \"Assigned to Bob\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/results",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["results"]
+            }
+          }
+        },
+        {
+          "name": "Get All Meeting Results",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/results",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["results"]
+            }
+          }
+        },
+        {
+          "name": "Get Meeting Result by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/results/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["results", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Meeting Result",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"achievement\": 100,\n  \"description\": \"Completed\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/results/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["results", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Meeting Result (Soft delete)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "http://localhost:3000/results/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["results", "1"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

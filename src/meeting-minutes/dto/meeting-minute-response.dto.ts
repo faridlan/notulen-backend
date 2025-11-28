@@ -1,3 +1,4 @@
+import { MeetingImageResponseDto } from 'src/meeting-images/dto/meeting-image-response.dto';
 import { MeetingResultResponseDto } from '../../meeting-results/dto/meeting-result-response.dto';
 
 export class MeetingMinuteResponseDto {
@@ -8,7 +9,7 @@ export class MeetingMinuteResponseDto {
   speaker?: string | null;
   numberOfParticipants: number;
   members: any[];
-  imageUrl?: string | null;
+  images?: MeetingImageResponseDto[];
   createdAt: Date;
 
   results?: MeetingResultResponseDto[];

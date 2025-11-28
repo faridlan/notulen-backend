@@ -21,8 +21,8 @@ model MeetingMinute {
   speaker              String?
   numberOfParticipants Int             @default(0)
   members              Json
-  imageUrl             String?
   results              MeetingResult[] // relation
+  images               MeetingImage[]
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
   isDeleted            Boolean         @default(false)
@@ -41,4 +41,13 @@ model MeetingResult {
   isDeleted            Boolean       @default(false)
 
   @@index([minuteId])
+}
+
+model MeetingImage {
+  id        Int      @id @default(autoincrement())
+  url       String
+  createdAt DateTime @default(now())
+
+  meetingMinute   MeetingMinute? @relation(fields: [meetingMinuteId], references: [id])
+  meetingMinuteId Int?
 }

@@ -1,5 +1,15 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/unbound-method */
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMeetingMinuteDto } from './dto/create-meeting-minute.dto';
 import { UpdateMeetingMinuteDto } from './dto/update-meeting-minute.dto';
@@ -9,20 +19,34 @@ import { FileUtils } from '../common/utils/file.utils';
 
 @Injectable()
 export class MeetingMinutesService {
-  constructor(private prisma: PrismaService) {}
   private logger = new Logger(MeetingMinutesService.name);
 
+  constructor(private prisma: PrismaService) {}
+
+  // ============================
+  // CREATE
+  // ============================
   async create(dto: CreateMeetingMinuteDto) {
     this.logger.log(`Creating minute "${dto.title}"`);
 
     const m = await this.prisma.meetingMinute.create({
-      data: dto,
-      include: { results: true },
+      data: {
+        division: dto.division,
+        title: dto.title,
+        notes: dto.notes,
+        speaker: dto.speaker,
+        numberOfParticipants: dto.numberOfParticipants ?? 0,
+        members: dto.members,
+      },
+      include: { results: true, images: true },
     });
 
     return MeetingMinuteMapper.toDto(m);
   }
 
+  // ============================
+  // FIND ALL
+  // ============================
   async findAll(query: PaginationQueryDto) {
     const {
       page = 1,
@@ -34,34 +58,34 @@ export class MeetingMinutesService {
 
     const skip = (page - 1) * limit;
 
-    return (
-      await this.prisma.meetingMinute.findMany({
-        where: {
-          isDeleted: false,
+    const minutes = await this.prisma.meetingMinute.findMany({
+      where: {
+        isDeleted: false,
+        OR: search
+          ? [
+              { title: { contains: search } },
+              { notes: { contains: search } },
+              { division: { contains: search } },
+              { speaker: { contains: search } },
+            ]
+          : undefined,
+      },
+      include: { results: true, images: true },
+      skip,
+      take: limit,
+      orderBy: { [sort]: order },
+    });
 
-          // SEARCH fields
-          OR: search
-            ? [
-                { title: { contains: search } },
-                { notes: { contains: search } },
-                { division: { contains: search } },
-                { speaker: { contains: search } },
-              ]
-            : undefined,
-        },
-
-        include: { results: true },
-        skip,
-        take: limit,
-        orderBy: { [sort]: order },
-      })
-    ).map(MeetingMinuteMapper.toDto);
+    return minutes.map(MeetingMinuteMapper.toDto);
   }
 
+  // ============================
+  // FIND ONE
+  // ============================
   async findOne(id: number) {
     const minute = await this.prisma.meetingMinute.findUnique({
       where: { id, isDeleted: false },
-      include: { results: true },
+      include: { results: true, images: true },
     });
 
     if (!minute) throw new NotFoundException('MeetingMinute not found');
@@ -69,45 +93,132 @@ export class MeetingMinutesService {
     return MeetingMinuteMapper.toDto(minute);
   }
 
+  // ============================
+  // UPDATE MEETING DATA (not images)
+  // ============================
   async update(id: number, dto: UpdateMeetingMinuteDto) {
-    // Get old data
     const existing = await this.prisma.meetingMinute.findUnique({
       where: { id },
     });
 
     if (!existing) throw new NotFoundException('MeetingMinute not found');
 
-    // Check if imageUrl is changed
-    if (
-      dto.imageUrl &&
-      existing.imageUrl &&
-      dto.imageUrl !== existing.imageUrl
-    ) {
-      // Delete old image
-      await FileUtils.deleteLocalFile(existing.imageUrl);
-    }
-
-    // Proceed with update
     const updated = await this.prisma.meetingMinute.update({
       where: { id },
-      data: dto,
-      include: { results: true },
+      data: {
+        division: dto.division,
+        title: dto.title,
+        notes: dto.notes,
+        speaker: dto.speaker,
+        numberOfParticipants: dto.numberOfParticipants,
+        members: dto.members,
+      },
+      include: { results: true, images: true },
     });
+    if (!updated) throw new NotFoundException('MeetingMinute not found');
 
     return MeetingMinuteMapper.toDto(updated);
   }
 
+  // ============================
+  // ADD IMAGES TO MEETING
+  // ============================
+  async addImages(minuteId: number, urls: string[]) {
+    const minute = await this.prisma.meetingMinute.findUnique({
+      where: { id: minuteId, isDeleted: false },
+    });
+
+    if (!minute) throw new NotFoundException('MeetingMinute not found');
+    if (!urls?.length) throw new BadRequestException('No image URLs provided');
+
+    await this.prisma.meetingImage.createMany({
+      data: urls.map((url) => ({
+        minuteId,
+        url,
+      })),
+    });
+
+    const updated = await this.prisma.meetingMinute.findUnique({
+      where: { id: minuteId },
+      include: { images: true, results: true },
+    });
+
+    if (!updated) throw new NotFoundException('MeetingMinute not found');
+
+    return MeetingMinuteMapper.toDto(updated);
+  }
+
+  // ============================
+  // REMOVE SPECIFIC IMAGE
+  // ============================
+  async removeImage(minuteId: number, imageId: number) {
+    const img = await this.prisma.meetingImage.findUnique({
+      where: { id: imageId },
+    });
+
+    if (!img) throw new NotFoundException('Image not found');
+    if (img.meetingMinuteId !== minuteId)
+      throw new BadRequestException('Image does not belong to this meeting');
+
+    // Delete the file
+    await FileUtils.deleteLocalFile(img.url);
+
+    // Delete DB row
+    await this.prisma.meetingImage.delete({
+      where: { id: imageId },
+    });
+
+    return { message: 'Image deleted successfully' };
+  }
+
+  // ============================
+  // REPLACE AN IMAGE
+  // ============================
+  async replaceImage(minuteId: number, imageId: number, newUrl: string) {
+    const img = await this.prisma.meetingImage.findUnique({
+      where: { id: imageId },
+    });
+
+    if (!img) throw new NotFoundException('Image not found');
+    if (img.meetingMinuteId !== minuteId)
+      throw new BadRequestException('Image does not belong to this meeting');
+
+    // Delete old file
+    await FileUtils.deleteLocalFile(img.url);
+
+    // Update DB with new URL
+    const updated = await this.prisma.meetingImage.update({
+      where: { id: imageId },
+      data: { url: newUrl },
+    });
+
+    return updated;
+  }
+
+  // ============================
+  // SOFT DELETE — DELETE ALL IMAGES TOO
+  // ============================
   async remove(id: number) {
     this.logger.warn(`Soft deleting minute #${id}`);
 
-    const minute = await this.findOne(id); // ensures exists
+    const minute = await this.prisma.meetingMinute.findUnique({
+      where: { id },
+      include: { images: true },
+    });
 
-    // Delete its image if any
-    if (minute.imageUrl) {
-      await FileUtils.deleteLocalFile(minute.imageUrl);
+    if (!minute) throw new NotFoundException('MeetingMinute not found');
+
+    // Delete all image files
+    for (const img of minute.images) {
+      await FileUtils.deleteLocalFile(img.url);
     }
 
-    // Soft delete DB record
+    // Delete all MeetingImage rows
+    await this.prisma.meetingImage.deleteMany({
+      where: { meetingMinuteId: id },
+    });
+
+    // Soft delete meeting
     return this.prisma.meetingMinute.update({
       where: { id },
       data: { isDeleted: true },
