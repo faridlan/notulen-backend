@@ -48,6 +48,8 @@ model MeetingImage {
   url       String
   createdAt DateTime @default(now())
 
-  meetingMinute   MeetingMinute? @relation(fields: [meetingMinuteId], references: [id])
-  meetingMinuteId Int?
+  meetingMinuteId Int
+  meetingMinute   MeetingMinute @relation(fields: [meetingMinuteId], references: [id])
+
+  @@index([meetingMinuteId])
 }
