@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Controller,
   Post,
@@ -14,8 +12,9 @@ export class UploadController {
   @Post('images')
   @UseInterceptors(FilesInterceptor('files', 10, multerConfig))
   uploadMultipleImages(@UploadedFiles() files: Express.Multer.File[]) {
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
     return files.map((file) => ({
-      url: `/uploads/meeting-images/${file.filename}`,
+      url: `${baseUrl}/uploads/meeting-images/${file.filename}`,
       filename: file.filename,
     }));
   }
