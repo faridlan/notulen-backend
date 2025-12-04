@@ -19,7 +19,7 @@ async function bootstrap() {
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads',
     setHeaders: (res) => {
-      res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173'); // or '*'
+      res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5174'); // or '*'
       res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
       res.setHeader(
         'Access-Control-Allow-Headers',
@@ -30,10 +30,15 @@ async function bootstrap() {
 
   // General CORS for API routes
   app.enableCors({
-    origin: 'http://localhost:5173', // or ['http://localhost:5173', ...]
+    origin: [
+      'http://localhost:5174',
+      'https://scabbily-watery-cindie.ngrok-free.dev',
+      'https://fervidly-unshort-stanton.ngrok-free.dev',
+    ],
+    credentials: true,
   });
 
-  await app.listen(3000);
+  await app.listen(3001);
 }
 
 void bootstrap();
